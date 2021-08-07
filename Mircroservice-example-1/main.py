@@ -10,22 +10,17 @@ app = Flask(__name__)
 
 app.config["DEBUG"] = True #If the code is malformed, there will be an error shown when visit app
 
-@app.route("/books", methods=["GET"])
-def books_table_update():
+@app.route("/state/<state>", methods=["GET"])
+def retrieve_table(state):
     
-    Title = request.args.get('title', None)
-    Author = request.args.get('author', None)
-
-    input_table = {'book_title':[Title],'book_author':[Author]}
-    input_table = pd.DataFrame(input_table)
-    input_table["book_title"]= input_table["book_title"].map(str)
-    input_table["book_author"]= input_table["book_author"].map(str)
-    
-    #Push table to Google Big Query
-
     client = bigquery.Client()
-    project_id = 'sue-gcp-learning-env'
     table_id = 'Books.books_title_author'
-    pandas_gbq.to_gbq(input_table, table_id, project_id=project_id, if_exists='append')
+    sql = "SELECT * FROM `sue-gcp-learning-env.public_data.covid19_tracking_cases_by_state` where state ='"+state+"'"
+
+    state_cases = client.query(sql).to_dataframe()
     
-    return "Table books_title_author has been Updated"
+    state = state_cases.state[0]
+    Total_Cases = state_cases.Total_cases[0]
+    
+    
+    return {"State":state ,"Total":Total_Cases}
